@@ -1,4 +1,4 @@
-module sockit_top (
+module lab1_waveform_gen (
     input  OSC_50_B8A,
 
     inout  AUD_ADCLRCK,
@@ -48,7 +48,7 @@ wire noise_enable = SW[9];          // SW[9]: Bật/tắt nhiễu
 // ============================================================================
 // Module PLL - Tạo clock
 // ============================================================================
-clock_pll pll (
+pll u_pll (
     .refclk (OSC_50_B8A),
     .rst (reset),
     .freq_sel (freq_sel),
@@ -59,7 +59,7 @@ clock_pll pll (
 // ============================================================================
 // Module I2C Config - Cấu hình Audio CODEC
 // ============================================================================
-i2c_av_config av_config (
+i2c_config u_i2c_config (
     .clk (main_clk),
     .reset (reset),
     .i2c_sclk (AUD_I2C_SCLK),
@@ -76,7 +76,7 @@ assign AUD_MUTE = 1'b0;             // Luôn bật audio output
 // ============================================================================
 // Module Noise Generator - Tạo nhiễu
 // ============================================================================
-noise_generator noise_gen (
+noise_gen u_noise_gen (
     .clk (audio_clk),
     .reset (reset),
     .noise_output (noise_output)
@@ -90,7 +90,7 @@ assign mixed_audio = noise_enable ? (audio_output + (noise_output >> 4)) : audio
 // ============================================================================
 // Module Amplitude Adjust - Điều chỉnh biên độ (SW[8:6])
 // ============================================================================
-amplitude_adjust amp_adj (
+amplitude_adjust u_amplitude_adjust (
     .clk (audio_clk),
     .audio_input (mixed_audio),
     .control (SW[8:6]),             // SW[8:6]: Điều chỉnh biên độ
@@ -105,7 +105,7 @@ assign final_audio_output = (SW[8:6] != 3'b000) ? adjusted_audio_output : mixed_
 // ============================================================================
 // Module Audio CODEC - Giao tiếp với DAC/ADC
 // ============================================================================
-audio_codec ac (
+audio_codec u_audio_codec (
     .clk (audio_clk),
     .reset (reset),
     .sample_end (sample_end),
@@ -124,7 +124,7 @@ audio_codec ac (
 // ============================================================================
 // Module Sine Wave Generator - Sóng sine
 // ============================================================================
-audio_effects ae (
+audio_effects u_sine_gen (
     .clk (audio_clk),
     .sample_end (sample_end[1]),
     .sample_req (sample_req[1]),
@@ -136,7 +136,7 @@ audio_effects ae (
 // ============================================================================
 // Module Square Wave Generator - Sóng vuông với duty cycle điều chỉnh được
 // ============================================================================
-square_wave sw(
+square_wave_gen u_square_wave_gen(
     .clk (audio_clk),
     .sample_end (sample_end[1]),
     .sample_req (sample_req[1]),
@@ -150,7 +150,7 @@ square_wave sw(
 // ============================================================================
 // Module Triangle Wave Generator - Sóng tam giác
 // ============================================================================
-triangle_wave tw(
+triangle_wave_gen u_triangle_wave_gen(
     .clk (audio_clk),
     .sample_end (sample_end[1]),
     .sample_req (sample_req[1]),
@@ -162,7 +162,7 @@ triangle_wave tw(
 // ============================================================================
 // Module Sawtooth Wave Generator - Sóng răng cưa
 // ============================================================================
-sawtooth_wave saw(
+sawtooth_wave_gen u_sawtooth_wave_gen(
     .clk (audio_clk),
     .sample_end (sample_end[1]),
     .sample_req (sample_req[1]),
@@ -174,7 +174,7 @@ sawtooth_wave saw(
 // ============================================================================
 // Module ECG Wave Generator - Sóng nhịp tim
 // ============================================================================
-ecg_wave ew(
+ecg_waveform_gen u_ecg_waveform_gen(
     .clk (audio_clk),
     .sample_end (sample_end[1]),
     .sample_req (sample_req[1]),
@@ -186,11 +186,6 @@ ecg_wave ew(
 // ============================================================================
 // Multiplexer - Chọn loại sóng dựa trên SW[3:1]
 // ============================================================================
-// SW[3:1] = 000: Sine wave
-// SW[3:1] = 001: Square wave (có duty cycle điều chỉnh bằng KEY[1])
-// SW[3:1] = 010: ECG wave
-// SW[3:1] = 011: Triangle wave
-// SW[3:1] = 110: Sawtooth wave
 always @(posedge audio_clk) begin
     case (SW[3:1])
         3'b000: audio_output <= sine_wave_out;
@@ -203,33 +198,3 @@ always @(posedge audio_clk) begin
 end
 
 endmodule
-
-// ============================================================================
-// Hướng dẫn sử dụng:
-// ============================================================================
-// KEY[0]: Reset hệ thống (duty cycle về 25%)
-// KEY[1]: Chuyển đổi duty cycle sóng vuông: 25% -> 50% -> 75% -> 25%...
-//
-// SW[0]: Bật/tắt sóng (0: tắt, 1: bật)
-// SW[3:1]: Chọn loại sóng
-//          000: Sine wave
-//          001: Square wave (điều chỉnh duty bằng KEY[1])
-//          010: ECG wave
-//          011: Triangle wave
-//          110: Sawtooth wave
-// SW[5:4]: Chọn tần số
-//          00: 25 MHz
-//          01: 12.5 MHz
-//          10: 6.25 MHz
-//          11: 3.125 MHz
-// SW[8:6]: Điều chỉnh biên độ
-//          000: 0x (tắt âm)
-//          001: 0.125x
-//          010: 0.25x
-//          011: 0.5x
-//          100: 0.707x
-//          101: 0.75x
-//          110: 0.875x
-//          111: 0.999x
-// SW[9]: Bật/tắt nhiễu (0: tắt, 1: bật)
-// ============================================================================

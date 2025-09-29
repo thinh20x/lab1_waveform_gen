@@ -1,4 +1,8 @@
-module i2c_av_config (
+// FILE: i2c_config.v  
+// Module cấu hình Audio CODEC qua I2C
+// ============================================================================
+
+module i2c_config (
     input clk,
     input reset,
 
@@ -18,7 +22,7 @@ reg  i2c_start = 1'b0;
 wire i2c_done;
 wire i2c_ack;
 
-i2c_controller control (
+i2c_control control (
     .clk (clk),
     .i2c_sclk (i2c_sclk),
     .i2c_sdat (i2c_sdat),

@@ -1,4 +1,9 @@
-module i2c_controller (
+// ============================================================================
+// FILE: i2c_control.v
+// Module điều khiển giao tiếp I2C ở mức thấp
+// ============================================================================
+
+module i2c_control (
     input  clk,
 
     output i2c_sclk,
